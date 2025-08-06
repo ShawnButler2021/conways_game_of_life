@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 
 class Grid:
@@ -17,17 +18,17 @@ class Grid:
         while cell_count < num_to_place:
             x = random.randint(0, self.width-1)
             y = random.randint(0, self.height-1)
+            coord = (x, y)
 
-            if (x,y) not in self.alive:
-                self.alive.append( (x,y) )
+            if coord not in self.alive:
+                self.alive.append(coord)
                 cell_count+=1
     
     def remove_cell(self, coord):
         try:
-            self.alive.remove( coord )
+            self.alive.remove(coord)
         except ValueError: # cell is dead, therefore can ignore
             pass
-
 
     def apply_ruleset(self, conn, coord):
         # true = cell lives
@@ -36,36 +37,19 @@ class Grid:
             return True
         elif conn == 2 and coord in self.alive:
             return True
-        elif conn < 3 and conn >= 0:
-            return False
-        elif conn > 3 and conn < 9:
-            return False
-        else:
-            print( f'Error: {conn} connections' ) 
-            return False
-               
 
-    def get_connections(self, x, y):
-        x_low, y_low = x-1, y-1
-        x_high, y_high = x+1, y+1
-        possible = [
-            (x_low, y_low),
-            (x_low, y),
-            (x_low, y_high),
-            (x_high, y_low),
-            (x_high, y),
-            (x_high, y_high),
-            (x, y_low),
-            (x, y_high)
-            ]
-        connections = [
-            c for c in self.alive
-            if c in possible
-            ]
-        return len(connections)
+        return False
 
-               
+    def get_connections(self, coord):
+        # use Euclidean distance
+        current_alive = np.array(self.alive, ndmin=2 ).reshape( len(self.alive), 2 )
+        coord = np.array(coord, ndmin=2 ).flatten()
 
+        dist = np.linalg.norm(current_alive - coord, axis=1)
+        mask = (0 < dist) & (dist < 2)
+        connections = len(current_alive[mask])
+
+        return connections
 
     def iterate(self):
         self.alive.sort()
@@ -73,10 +57,11 @@ class Grid:
 
         for y in range(self.height):
             for x in range(self.width):
-                connections = self.get_connections(x,y)
-                if self.apply_ruleset( connections, (x,y) ):
+                coord = (x,y)
+
+                connections = self.get_connections( coord )
+                if self.apply_ruleset( connections, coord ):
                     alive.append( (x,y) )
 
         self.alive = alive
-
 
