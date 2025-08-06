@@ -3,13 +3,14 @@ from display import CLIDisplay
 
 
 if __name__ == '__main__':
-    rounds = 1000
-    width, height = 50, 50
+    rounds = 5
+    width, height = 5,5
 
     gg = Grid(width, height, 0)
     gd = CLIDisplay(width, height)
     
-    gg.random_map( width*height/2 )
+    gg.random_map( 5 )
+    gd.print(gg.alive)
 
 
     for r in range(rounds):

@@ -1,5 +1,5 @@
 import random
-
+import numpy as np
 
 class Grid:
     def __init__(self, width, height, seed=42):
@@ -7,7 +7,9 @@ class Grid:
         self.height = height
         random.seed(seed)
 
-        self.alive = []
+        self.alive = np.empty( (1,2) )
+        self.alive[0] = 0,0
+        self.alive = np.delete(self.alive, 0,0)
 
     def random_map(self, num_to_place=None):
         if not num_to_place:
@@ -17,66 +19,63 @@ class Grid:
         while cell_count < num_to_place:
             x = random.randint(0, self.width-1)
             y = random.randint(0, self.height-1)
+            coord = np.array( [x,y], ndmin=2 )
 
-            if (x,y) not in self.alive:
-                self.alive.append( (x,y) )
+            if coord not in self.alive:
+                self.alive = np.append(self.alive, coord, axis=0)
                 cell_count+=1
     
     def remove_cell(self, coord):
+        if type(coord) != np.array:
+            coord = np.array(coord, ndmin=2 )
+
         try:
-            self.alive.remove( coord )
+            self.alive = np.delete( self.alive, coord, 0 )
         except ValueError: # cell is dead, therefore can ignore
             pass
-
 
     def apply_ruleset(self, conn, coord):
         # true = cell lives
         # false = cell dies
+        matches = 0
+        try:
+            matches = np.any(np.all(self.alive == coord.flatten(), axis=1))
+        except ValueError:
+            print(matches)
+
         if conn == 3:
             return True
-        elif conn == 2 and coord in self.alive:
+        elif conn == 2 and matches != 0:
             return True
-        elif conn < 3 and conn >= 0:
+        elif 2 >= conn >= 0:
             return False
-        elif conn > 3 and conn < 9:
+        elif 4 <= conn <= 8:
             return False
         else:
             print( f'Error: {conn} connections' ) 
             return False
-               
 
-    def get_connections(self, x, y):
-        x_low, y_low = x-1, y-1
-        x_high, y_high = x+1, y+1
-        possible = [
-            (x_low, y_low),
-            (x_low, y),
-            (x_low, y_high),
-            (x_high, y_low),
-            (x_high, y),
-            (x_high, y_high),
-            (x, y_low),
-            (x, y_high)
+    def get_connections(self, coord):
+        # use Euclidean distance
+        connections = np.array(
+            [
+                c for c in self.alive
+                if np.linalg.norm(coord - c) < 2
             ]
-        connections = [
-            c for c in self.alive
-            if c in possible
-            ]
+        )
         return len(connections)
 
-               
-
-
     def iterate(self):
-        self.alive.sort()
+        self.alive = np.sort(self.alive)
         alive = []
 
         for y in range(self.height):
             for x in range(self.width):
-                connections = self.get_connections(x,y)
-                if self.apply_ruleset( connections, (x,y) ):
+                coord = np.array( [x,y], ndmin=2 )
+
+                connections = self.get_connections( coord )
+                if self.apply_ruleset( connections, coord ):
                     alive.append( (x,y) )
 
-        self.alive = alive
-
+        self.alive = np.array(alive, ndmin=2 )
 
